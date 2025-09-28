@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -10,7 +10,9 @@ import {
   Settings, 
   LogOut, 
   User,
-  FileText 
+  FileText,
+  Menu,
+  X
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
@@ -22,6 +24,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!session) {
     return <div className="min-h-screen bg-background">{children}</div>;
@@ -70,13 +73,32 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <div className="flex h-screen">
+        {/* Mobile menu overlay */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <div className="flex flex-col w-64 bg-card border-r">
-          <div className="flex items-center h-16 px-4 border-b">
-            <h1 className="text-xl font-semibold">Document MS</h1>
+        <div className={cn(
+          "fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-card border-r transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
+          <div className="flex items-center justify-between h-16 px-4 border-b">
+            <h1 className="text-lg font-semibold">Document MS</h1>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
           
-          <nav className="flex-1 px-4 py-4 space-y-2">
+          <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
               return (
@@ -84,13 +106,14 @@ export function Layout({ children }: LayoutProps) {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    "flex items-center px-3 py-3 rounded-md text-sm font-medium transition-colors",
                     item.current
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   )}
+                  onClick={() => setSidebarOpen(false)}
                 >
-                  <Icon className="mr-3 h-4 w-4" />
+                  <Icon className="mr-3 h-5 w-5" />
                   {item.name}
                 </Link>
               );
@@ -127,6 +150,19 @@ export function Layout({ children }: LayoutProps) {
         
         {/* Main content */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Mobile header */}
+          <div className="flex items-center justify-between h-16 px-4 border-b bg-background lg:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold">Document MS</h1>
+            <div className="w-10" /> {/* Spacer for centering */}
+          </div>
+
           <main className="flex-1 overflow-auto">
             {children}
           </main>

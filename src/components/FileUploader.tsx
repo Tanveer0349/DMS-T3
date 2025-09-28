@@ -125,7 +125,7 @@ export function FileUploader({
       <div
         {...getRootProps()}
         className={cn(
-          "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+          "border-2 border-dashed rounded-lg p-4 sm:p-6 text-center cursor-pointer transition-colors",
           isDragActive
             ? "border-primary bg-primary/5"
             : "border-muted-foreground/25 hover:border-primary/50",
@@ -137,15 +137,15 @@ export function FileUploader({
         
         {selectedFile ? (
           <div className="space-y-4">
-            <div className="flex items-center justify-center space-x-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-2">
               {uploadComplete ? (
                 <CheckCircle className="h-8 w-8 text-green-500" />
               ) : (
                 <File className="h-8 w-8 text-primary" />
               )}
-              <div className="text-left">
-                <p className="font-medium">{selectedFile.name}</p>
-                <p className="text-sm text-muted-foreground">
+              <div className="text-center sm:text-left">
+                <p className="font-medium text-sm sm:text-base break-all">{selectedFile.name}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {formatFileSize(selectedFile.size)}
                 </p>
               </div>
@@ -157,6 +157,7 @@ export function FileUploader({
                     e.stopPropagation();
                     clearFile();
                   }}
+                  className="shrink-0"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -194,15 +195,15 @@ export function FileUploader({
           </div>
         ) : (
           <div className="space-y-4">
-            <Upload className="h-12 w-12 text-muted-foreground mx-auto" />
+            <Upload className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto" />
             <div>
-              <p className="text-lg font-medium">
+              <p className="text-base sm:text-lg font-medium">
                 {isDragActive ? "Drop the file here" : "Upload a document"}
               </p>
-              <p className="text-sm text-muted-foreground">
-                Drag and drop or click to select a file
+              <p className="text-sm text-muted-foreground px-2">
+                Drag and drop or tap to select a file
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-2 px-2">
                 Supported: .doc, .docx, .pdf, .txt, .xlsx, .xls (max {formatFileSize(maxSize)})
               </p>
             </div>
