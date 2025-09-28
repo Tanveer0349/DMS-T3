@@ -171,29 +171,33 @@ export function CategoriesClient() {
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-3">
-                      <Badge variant="secondary">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
+                      <Badge variant="secondary" className="mb-2 sm:mb-0 w-fit">
                         <Users className="h-3 w-3 mr-1" />
                         Category
                       </Badge>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-wrap gap-2">
                         {editingCategory?.id !== category.id && (
                           <>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => setEditingCategory({ id: category.id, name: category.name })}
+                              className="flex-shrink-0"
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-4 w-4 sm:mr-2" />
+                              <span className="hidden sm:inline">Edit</span>
                             </Button>
                             
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => router.push(`/admin/categories/${category.id}`)}
+                              className="flex-shrink-0"
                             >
-                              Manage
+                              <FolderOpen className="h-4 w-4 sm:mr-2" />
+                              <span className="hidden sm:inline">Manage</span>
                             </Button>
                             
                             <Button
@@ -201,8 +205,16 @@ export function CategoriesClient() {
                               size="sm"
                               onClick={() => handleDeleteCategory(category.id)}
                               disabled={deleteCategoryMutation.isPending}
+                              className="flex-shrink-0 text-destructive hover:text-destructive"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {deleteCategoryMutation.isPending ? (
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              ) : (
+                                <>
+                                  <Trash2 className="h-4 w-4 sm:mr-2" />
+                                  <span className="hidden sm:inline">Delete</span>
+                                </>
+                              )}
                             </Button>
                           </>
                         )}

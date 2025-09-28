@@ -237,23 +237,24 @@ export function UsersClient() {
                     key={user.id}
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
                         {user.role === "system_admin" ? (
                           <Shield className="h-5 w-5 text-primary" />
                         ) : (
                           <Users className="h-5 w-5 text-primary" />
                         )}
                       </div>
-                      <div>
-                        <h3 className="font-medium">{user.name || user.email}</h3>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{user.name || user.email}</h3>
+                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3 mt-4 sm:mt-0">
                       <Badge 
                         variant={user.role === "system_admin" ? "default" : "secondary"}
+                        className="w-fit"
                       >
                         {user.role === "system_admin" ? "Admin" : "User"}
                       </Badge>
@@ -267,13 +268,14 @@ export function UsersClient() {
                         size="sm"
                         onClick={() => handleDeleteUser(user.id, user.name || user.email)}
                         disabled={deletingUserId === user.id}
-                        className="text-destructive hover:text-destructive"
+                        className="text-destructive hover:text-destructive w-full sm:w-auto"
                       >
                         {deletingUserId === user.id ? (
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
                         ) : (
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 mr-2" />
                         )}
+                        Delete User
                       </Button>
                     </div>
                   </div>

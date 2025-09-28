@@ -171,16 +171,17 @@ export function DocumentVersionManager({
   return (
     <div className="space-y-4">
       {/* Version Management Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-2">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          {documentName}
+          <FileText className="h-5 w-5 flex-shrink-0" />
+          <span className="truncate">{documentName}</span>
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowVersions(!showVersions)}
+            className="w-full sm:w-auto"
           >
             <History className="h-4 w-4 mr-2" />
             {showVersions ? "Hide" : "Show"} Versions ({versions?.length || 0})
@@ -190,34 +191,41 @@ export function DocumentVersionManager({
               variant="outline"
               size="sm"
               onClick={() => setConfirmDeleteDocument(true)}
-              className="text-destructive hover:text-destructive"
+              className="text-destructive hover:text-destructive w-full sm:w-auto"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              <span className="sm:hidden">Delete Document</span>
+              <span className="hidden sm:inline">Delete</span>
             </Button>
           )}
           {confirmDeleteDocument && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-destructive font-medium">Delete document?</span>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleDeleteDocument}
-                disabled={deleteDocumentMutation.isPending}
-              >
-                {deleteDocumentMutation.isPending ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : (
-                  "Yes, Delete"
-                )}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setConfirmDeleteDocument(false)}
-              >
-                Cancel
-              </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <span className="text-sm text-destructive font-medium px-2 py-1 sm:py-0 text-center sm:text-left">
+                Delete document?
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleDeleteDocument}
+                  disabled={deleteDocumentMutation.isPending}
+                  className="flex-1 sm:flex-none"
+                >
+                  {deleteDocumentMutation.isPending ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    "Yes, Delete"
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setConfirmDeleteDocument(false)}
+                  className="flex-1 sm:flex-none"
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -263,9 +271,9 @@ export function DocumentVersionManager({
                           index === 0 ? "border-primary bg-primary/5" : ""
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex items-center gap-2 flex-shrink-0">
                               <FileText className="h-4 w-4" />
                               <span className="font-medium">
                                 Version {version.versionNumber}
@@ -278,74 +286,88 @@ export function DocumentVersionManager({
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.open(version.fileUrl, '_blank')}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDownload(
-                                version.fileUrl, 
-                                documentName, 
-                                version.versionNumber
-                              )}
-                            >
-                              <Download className="h-4 w-4 mr-1" />
-                              Download
-                            </Button>
-                            {canDelete && versions && versions.length > 1 && (
-                              <>
-                                {confirmDeleteVersion === version.id ? (
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={() => handleDeleteVersion(version.id, version.versionNumber)}
-                                      disabled={deletingVersionId === version.id}
-                                    >
-                                      {deletingVersionId === version.id ? (
-                                        <div className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
-                                      ) : (
-                                        "Delete"
-                                      )}
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => setConfirmDeleteVersion(null)}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setConfirmDeleteVersion(version.id)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                            <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(version.fileUrl, '_blank')}
+                                className="flex-1 sm:flex-none"
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                <span className="sm:hidden">View</span>
+                                <span className="hidden sm:inline">View</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownload(
+                                  version.fileUrl, 
+                                  documentName, 
+                                  version.versionNumber
                                 )}
-                              </>
-                            )}
+                                className="flex-1 sm:flex-none"
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                <span className="sm:hidden">Download</span>
+                                <span className="hidden sm:inline">Download</span>
+                              </Button>
+                              {canDelete && versions && versions.length > 1 && (
+                                <>
+                                  {confirmDeleteVersion === version.id ? (
+                                    <div className="flex gap-1 flex-1 sm:flex-none">
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => handleDeleteVersion(version.id, version.versionNumber)}
+                                        disabled={deletingVersionId === version.id}
+                                        className="flex-1 sm:flex-none"
+                                      >
+                                        {deletingVersionId === version.id ? (
+                                          <div className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
+                                        ) : (
+                                          <>
+                                            <span className="sm:hidden">Delete</span>
+                                            <span className="hidden sm:inline">Delete</span>
+                                          </>
+                                        )}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setConfirmDeleteVersion(null)}
+                                        className="flex-1 sm:flex-none"
+                                      >
+                                        <span className="sm:hidden">Cancel</span>
+                                        <span className="hidden sm:inline">Cancel</span>
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setConfirmDeleteVersion(version.id)}
+                                      className="text-destructive hover:text-destructive flex-shrink-0"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {formatDate(version.createdAt)}
+                            <Clock className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{formatDate(version.createdAt)}</span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            Uploaded by {version.uploadedBy || version.uploadedByEmail}
+                            <User className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">
+                              Uploaded by {version.uploadedBy || version.uploadedByEmail}
+                            </span>
                           </div>
                         </div>
                       </div>
