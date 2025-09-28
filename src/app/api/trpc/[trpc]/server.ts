@@ -15,7 +15,7 @@ const createContext = cache(() => {
   heads.set("x-trpc-source", "rsc");
 
   return createTRPCContext({
-    headers: heads,
+    req: undefined, // req is not available in RSC context
   });
 });
 

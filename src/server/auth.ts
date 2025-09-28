@@ -11,7 +11,7 @@ import bcrypt from "bcryptjs";
 
 import { env } from "~/env.js";
 import { db } from "~/server/db";
-import { createTable, users } from "~/server/db/schema";
+import { users, accounts, sessions, verificationTokens } from "~/server/db/schema";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -44,7 +44,12 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
   },
-  adapter: DrizzleAdapter(db, createTable) as Adapter,
+  adapter: DrizzleAdapter(db, {
+    usersTable: users,
+    accountsTable: accounts,
+    sessionsTable: sessions,
+    verificationTokensTable: verificationTokens,
+  }) as Adapter,
   providers: [
     CredentialsProvider({
       name: "credentials",

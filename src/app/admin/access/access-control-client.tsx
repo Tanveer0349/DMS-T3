@@ -58,13 +58,13 @@ export function AccessControlClient() {
     }
   };
 
-  const getUserName = (userId: string) => {
-    const user = users?.find(u => u.id === userId);
-    return user?.name || user?.email || "Unknown User";
-  };
+const getUserName = (userId: string) => {
+  const user = users?.find((u: any) => u.id === userId);
+  return user?.name || user?.email || "Unknown User";
+};
 
   const getUserEmail = (userId: string) => {
-    const user = users?.find(u => u.id === userId);
+    const user = users?.find((u: any)=> u.id === userId);
     return user?.email || "";
   };
 
@@ -92,7 +92,7 @@ export function AccessControlClient() {
                 <SelectValue placeholder="Choose a category to manage access" />
               </SelectTrigger>
               <SelectContent>
-                {categories?.map((category) => (
+                {categories?.map((category: any) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
                   </SelectItem>
@@ -119,7 +119,7 @@ export function AccessControlClient() {
                       <SelectValue placeholder="Select user" />
                     </SelectTrigger>
                     <SelectContent>
-                      {users?.filter(user => user.role === "user").map((user) => (
+                      {users?.filter((user: any) => user.role === "user").map((user: any) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.name || user.email}
                         </SelectItem>
@@ -161,7 +161,7 @@ export function AccessControlClient() {
               <CardContent>
                 {categoryAccess && categoryAccess.length > 0 ? (
                   <div className="space-y-4">
-                    {categoryAccess.map((access) => (
+                    {categoryAccess.map((access: any) => (
                       <div
                         key={access.id}
                         className="flex items-center justify-between p-4 border rounded-lg"

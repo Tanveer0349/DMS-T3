@@ -10,6 +10,9 @@ import { Badge } from "~/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { useToast } from "~/components/providers/toast-provider";
 import { api } from "~/trpc/react";
+import type { RouterOutputs } from "~/trpc/react";
+
+type User = RouterOutputs["admin"]["getAllUsers"][0];
 
 export function UsersClient() {
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -82,8 +85,8 @@ export function UsersClient() {
     }
   };
 
-  const regularUsers = users?.filter(user => user.role === "user") || [];
-  const adminUsers = users?.filter(user => user.role === "system_admin") || [];
+  const regularUsers = users?.filter((user: User) => user.role === "user") || [];
+  const adminUsers = users?.filter((user: User) => user.role === "system_admin") || [];
 
   return (
     <Layout>
@@ -229,7 +232,7 @@ export function UsersClient() {
           <CardContent>
             {users && users.length > 0 ? (
               <div className="space-y-4">
-                {users.map((user) => (
+                {users.map((user: User) => (
                   <div
                     key={user.id}
                     className="flex items-center justify-between p-4 border rounded-lg"
@@ -243,7 +246,7 @@ export function UsersClient() {
                         )}
                       </div>
                       <div>
-                        <h3 className="font-medium">{user.name}</h3>
+                        <h3 className="font-medium">{user.name || user.email}</h3>
                         <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
@@ -262,7 +265,7 @@ export function UsersClient() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDeleteUser(user.id, user.name)}
+                        onClick={() => handleDeleteUser(user.id, user.name || user.email)}
                         disabled={deletingUserId === user.id}
                         className="text-destructive hover:text-destructive"
                       >

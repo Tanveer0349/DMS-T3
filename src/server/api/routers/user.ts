@@ -76,16 +76,18 @@ export const userRouter = createTRPCRouter({
   getDocumentsByFolder: protectedProcedure
     .input(z.object({ folderId: z.string() }))
     .query(async ({ ctx, input }) => {
-      // Get folder details to check access
-      const folder = await ctx.db
+      // Check folder access
+      const folderData = await ctx.db
         .select()
         .from(folders)
         .where(eq(folders.id, input.folderId))
         .limit(1);
 
-      if (folder.length === 0) {
+      if (folderData.length === 0) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
+
+      const folder = folderData[0]!;
 
       // Check if user has access to the category
       const hasAccess = await ctx.db
@@ -94,7 +96,7 @@ export const userRouter = createTRPCRouter({
         .where(
           and(
             eq(accessControl.userId, ctx.session.user.id),
-            eq(accessControl.categoryId, folder[0]!.categoryId)
+            eq(accessControl.categoryId, folder.categoryId)
           )
         );
 
@@ -103,7 +105,7 @@ export const userRouter = createTRPCRouter({
       }
 
       // If it's a personal folder, make sure the user owns it
-      if (folder[0]!.isPersonal && folder[0]!.createdBy !== ctx.session.user.id) {
+      if (folder.isPersonal && folder.createdBy !== ctx.session.user.id) {
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
@@ -282,9 +284,9 @@ export const userRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       // Check if user can upload versions for this document
-      const document = await ctx.db
+      const documentData = await ctx.db
         .select({
-          document,
+          document: documents,
           folder: folders,
         })
         .from(documents)
@@ -292,11 +294,11 @@ export const userRouter = createTRPCRouter({
         .where(eq(documents.id, input.documentId))
         .limit(1);
 
-      if (document.length === 0) {
+      if (documentData.length === 0) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      const doc = document[0]!;
+      const doc = documentData[0]!;
 
       // Check category access
       const hasAccess = await ctx.db
@@ -364,9 +366,9 @@ export const userRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       // Check document ownership and permissions
-      const document = await ctx.db
+      const documentData = await ctx.db
         .select({
-          document,
+          document: documents,
           folder: folders,
         })
         .from(documents)
@@ -374,11 +376,11 @@ export const userRouter = createTRPCRouter({
         .where(eq(documents.id, input.id))
         .limit(1);
 
-      if (document.length === 0) {
+      if (documentData.length === 0) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      const doc = document[0]!;
+      const doc = documentData[0]!;
 
       // Check category access
       const hasAccess = await ctx.db
@@ -414,9 +416,9 @@ export const userRouter = createTRPCRouter({
     .input(z.object({ versionId: z.string(), documentId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       // Check document access and permissions
-      const document = await ctx.db
+      const documentData = await ctx.db
         .select({
-          document,
+          document: documents,
           folder: folders,
         })
         .from(documents)
@@ -424,11 +426,11 @@ export const userRouter = createTRPCRouter({
         .where(eq(documents.id, input.documentId))
         .limit(1);
 
-      if (document.length === 0) {
+      if (documentData.length === 0) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      const doc = document[0]!;
+      const doc = documentData[0]!;
 
       // Check category access
       const hasAccess = await ctx.db
@@ -513,9 +515,9 @@ export const userRouter = createTRPCRouter({
     .input(z.object({ documentId: z.string() }))
     .query(async ({ ctx, input }) => {
       // Check document access first
-      const document = await ctx.db
+      const documentData = await ctx.db
         .select({
-          document,
+          document: documents,
           folder: folders,
         })
         .from(documents)
@@ -523,11 +525,11 @@ export const userRouter = createTRPCRouter({
         .where(eq(documents.id, input.documentId))
         .limit(1);
 
-      if (document.length === 0) {
+      if (documentData.length === 0) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      const doc = document[0]!;
+      const doc = documentData[0]!;
 
       // Check category access
       const hasAccess = await ctx.db

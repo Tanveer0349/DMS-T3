@@ -37,7 +37,7 @@ export function CategoryDetailClient({ categoryId }: CategoryDetailClientProps) 
   const createFolderMutation = api.admin.createFolder.useMutation();
   const createDocumentMutation = api.admin.createDocument.useMutation();
 
-  const currentCategory = categories?.find(c => c.id === categoryId);
+  const currentCategory = categories?.find((c: any) => c.id === categoryId);
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
@@ -184,7 +184,7 @@ export function CategoryDetailClient({ categoryId }: CategoryDetailClientProps) 
               <CardContent>
                 {folders && folders.length > 0 ? (
                   <div className="space-y-2">
-                    {folders.map((folder) => (
+                    {folders.map((folder: any) => (
                       <div
                         key={folder.id}
                         className={`p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -257,7 +257,7 @@ export function CategoryDetailClient({ categoryId }: CategoryDetailClientProps) 
                 {selectedFolder ? (
                   documents && documents.length > 0 ? (
                     <div className="space-y-4">
-                      {documents.map((document) => (
+                      {documents.map((document:any) => (
                         <div key={document.id}>
                           <DocumentVersionManager
                             documentId={document.id}

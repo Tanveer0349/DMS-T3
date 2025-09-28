@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
+import type { UploadApiResponse } from "cloudinary";
 import { env } from "~/env.js";
 
 // Configure cloudinary
@@ -8,32 +9,11 @@ cloudinary.config({
   api_secret: env.CLOUDINARY_API_SECRET,
 });
 
-export interface CloudinaryUploadResult {
-  public_id: string;
-  version: number;
-  signature: string;
-  width: number;
-  height: number;
-  format: string;
-  resource_type: string;
-  created_at: string;
-  tags: string[];
-  bytes: number;
-  type: string;
-  etag: string;
-  placeholder: boolean;
-  url: string;
-  secure_url: string;
-  folder: string;
-  original_filename: string;
-  api_key: string;
-}
-
 export const uploadToCloudinary = async (
   file: Buffer,
   fileName: string,
   folder: string = "dms"
-): Promise<CloudinaryUploadResult> => {
+): Promise<UploadApiResponse> => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.upload_stream(
       {
@@ -46,8 +26,10 @@ export const uploadToCloudinary = async (
       (error, result) => {
         if (error) {
           reject(error);
+        } else if (result) {
+          resolve(result);
         } else {
-          resolve(result as CloudinaryUploadResult);
+          reject(new Error("Upload failed - no result returned"));
         }
       }
     ).end(file);

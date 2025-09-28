@@ -9,6 +9,9 @@ import { Input } from "~/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { api } from "~/trpc/react";
+import type { RouterOutputs } from "~/trpc/react";
+
+type Category = RouterOutputs["admin"]["getCategories"][0];
 
 export function CategoriesClient() {
   const router = useRouter();
@@ -117,7 +120,7 @@ export function CategoriesClient() {
           <CardContent>
             {categories && categories.length > 0 ? (
               <div className="space-y-4">
-                {categories.map((category) => (
+                {categories.map((category: Category) => (
                   <div
                     key={category.id}
                     className="flex items-center justify-between p-4 border rounded-lg"
@@ -128,11 +131,11 @@ export function CategoriesClient() {
                         {editingCategory?.id === category.id ? (
                           <div className="flex items-center gap-2">
                             <Input
-                              value={editingCategory.name}
-                              onChange={(e) => setEditingCategory({
+                              value={editingCategory?.name || ""}
+                              onChange={(e) => setEditingCategory(editingCategory ? {
                                 ...editingCategory,
                                 name: e.target.value
-                              })}
+                              } : null)}
                               className="h-8 w-48"
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") {
@@ -168,40 +171,42 @@ export function CategoriesClient() {
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                       <Badge variant="secondary">
                         <Users className="h-3 w-3 mr-1" />
-                        0 users
+                        Category
                       </Badge>
-                      
-                      {editingCategory?.id !== category.id && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingCategory({ id: category.id, name: category.name })}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push(`/admin/categories/${category.id}`)}
-                          >
-                            Manage
-                          </Button>
-                          
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteCategory(category.id)}
-                            disabled={deleteCategoryMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
+
+                      <div className="flex items-center space-x-2">
+                        {editingCategory?.id !== category.id && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingCategory({ id: category.id, name: category.name })}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => router.push(`/admin/categories/${category.id}`)}
+                            >
+                              Manage
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteCategory(category.id)}
+                              disabled={deleteCategoryMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

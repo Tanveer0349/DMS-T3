@@ -1,5 +1,4 @@
 import { initTRPC, TRPCError } from "@trpc/server";
-import { type FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import { type Session } from "next-auth";
 import superjson from "superjson";
 import { ZodError } from "zod";
@@ -18,7 +17,7 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
   };
 };
 
-export const createTRPCContext = async (opts: FetchCreateContextFnOptions) => {
+export const createTRPCContext = async (opts: { req: any }) => {
   const session = await getServerAuthSession();
 
   return createInnerTRPCContext({

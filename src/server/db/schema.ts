@@ -25,7 +25,7 @@ export const users = createTable("user", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   emailVerified: timestamp("emailVerified", {
     mode: "date",
-  }).default(null),
+  }),
   image: varchar("image", { length: 255 }),
   role: roleEnum("role").notNull().default("user"),
   passwordHash: varchar("password_hash", { length: 255 }),

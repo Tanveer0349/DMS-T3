@@ -107,7 +107,7 @@ export function AdminDashboardClient() {
 
           {/* Categories List */}
           <div className="space-y-4">
-            {categories?.map((category) => (
+            {categories?.map((category: any) => (
               <div
                 key={category.id}
                 className="flex items-center justify-between p-4 border rounded-lg"
