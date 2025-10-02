@@ -214,6 +214,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   uploadedVersions: many(documentVersions),
   accessControls: many(accessControl),
   grantedAccess: many(accessControl, { relationName: "GrantedAccess" }),
+  documentComments: many(documentComments),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -259,6 +260,7 @@ export const documentsRelations = relations(documents, ({ one, many }) => ({
     references: [documentVersions.id],
   }),
   versions: many(documentVersions),
+  comments: many(documentComments),
 }));
 
 export const documentVersionsRelations = relations(
@@ -290,3 +292,54 @@ export const accessControlRelations = relations(accessControl, ({ one }) => ({
     relationName: "GrantedAccess",
   }),
 }));
+
+// Document Comments Table
+export const documentComments = createTable(
+  "document_comment",
+  {
+    id: varchar("id", { length: 255 }).notNull().primaryKey(),
+    documentId: varchar("document_id", { length: 255 })
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    parentCommentId: varchar("parent_comment_id", { length: 255 }),
+    content: text("content").notNull(),
+    authorId: varchar("author_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    isEdited: boolean("is_edited").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (comment) => ({
+    documentIdIdx: index("document_comment_document_id_idx").on(comment.documentId),
+    authorIdIdx: index("document_comment_author_id_idx").on(comment.authorId),
+    parentCommentIdIdx: index("document_comment_parent_id_idx").on(comment.parentCommentId),
+  })
+);
+
+// Document Comments Relations
+export const documentCommentsRelations = relations(
+  documentComments,
+  ({ one, many }) => ({
+    document: one(documents, {
+      fields: [documentComments.documentId],
+      references: [documents.id],
+    }),
+    author: one(users, {
+      fields: [documentComments.authorId],
+      references: [users.id],
+    }),
+    parentComment: one(documentComments, {
+      fields: [documentComments.parentCommentId],
+      references: [documentComments.id],
+      relationName: "ParentComment",
+    }),
+    replies: many(documentComments, {
+      relationName: "ParentComment",
+    }),
+  })
+);

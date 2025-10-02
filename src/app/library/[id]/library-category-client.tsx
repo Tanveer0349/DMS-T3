@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { ArrowLeft, Folder, Plus, FileText, Upload, Eye, Edit, Lock } from "lucide-react";
 import { Layout } from "~/components/Layout";
 import { Button } from "~/components/ui/button";
@@ -23,6 +24,7 @@ export function LibraryCategoryClient({ categoryId }: LibraryCategoryClientProps
   const [newDocumentName, setNewDocumentName] = useState("");
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const { addToast } = useToast();
+  const { data: session } = useSession();
 
   // Queries
   const { data: categories } = api.user.getAccessibleCategories.useQuery();
@@ -249,16 +251,21 @@ export function LibraryCategoryClient({ categoryId }: LibraryCategoryClientProps
           {/* Documents Section */}
           <div className="space-y-6">
             {/* Upload Document */}
-            {canWrite && (
+            {canWrite && selectedFolder && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Upload className="h-5 w-5" />
                     Upload Document
+                    {folders?.find(f => f.id === selectedFolder)?.isPersonal ? (
+                      <Badge variant="default" className="ml-2">Personal Folder</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="ml-2">Shared Folder</Badge>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {selectedFolder ? (
+                  {folders?.find(f => f.id === selectedFolder)?.isPersonal ? (
                     <div className="space-y-4">
                       <Input
                         placeholder="Document name"
@@ -272,7 +279,10 @@ export function LibraryCategoryClient({ categoryId }: LibraryCategoryClientProps
                     </div>
                   ) : (
                     <div className="text-center py-6 text-muted-foreground">
-                      <p>Select a folder first to upload documents</p>
+                      <Lock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="font-medium">Cannot upload to shared folders</p>
+                      <p className="text-sm">You can only upload documents to your personal folders.</p>
+                      <p className="text-sm">Use the clone feature to copy documents to your personal folders.</p>
                     </div>
                   )}
                 </CardContent>
@@ -294,20 +304,31 @@ export function LibraryCategoryClient({ categoryId }: LibraryCategoryClientProps
                 {selectedFolder ? (
                   documents && documents.length > 0 ? (
                     <div className="space-y-4">
-                      {documents.map((document) => (
-                        <div key={document.id}>
-                          <DocumentVersionManager
-                            documentId={document.id}
-                            documentName={document.name}
-                            canUploadVersions={canWrite}
-                            canDelete={canWrite}
-                            isAdmin={false}
-                            onDocumentDelete={async () => {
-                              await refetchDocuments();
-                            }}
-                          />
-                        </div>
-                      ))}
+                      {documents.map((document) => {
+                        const selectedFolderData = folders?.find(f => f.id === selectedFolder);
+                        const isOwnDocument = document.createdBy === session?.user?.id;
+                        const isPersonalFolder = selectedFolderData?.isPersonal === true;
+                        
+                        return (
+                          <div key={document.id}>
+                            <DocumentVersionManager
+                              documentId={document.id}
+                              documentName={document.name}
+                              canUploadVersions={isOwnDocument && isPersonalFolder}
+                              canDelete={isOwnDocument && isPersonalFolder}
+                              isAdmin={false}
+                              isOwnDocument={isOwnDocument}
+                              isPersonalFolder={isPersonalFolder}
+                              onDocumentDelete={async () => {
+                                await refetchDocuments();
+                              }}
+                              onDocumentClone={async () => {
+                                await refetchDocuments();
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-6 text-muted-foreground">

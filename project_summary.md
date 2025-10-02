@@ -55,6 +55,7 @@ src/
 - **folders** - Folder organization (personal/shared)
 - **documents** - Document metadata
 - **document_versions** - Version history
+- **document_comments** - Comments and collaboration threads
 - **access_control** - Permission management
 
 ## 👥 **User Roles & Permissions**
@@ -72,9 +73,11 @@ src/
 - ✅ Access assigned categories only
 - ✅ View permissions based on access level
 - ✅ Create personal folders
-- ✅ Upload documents (with full access)
+- ✅ Upload documents to personal folders only
+- ✅ Clone documents from shared folders
 - ✅ Manage own document versions
 - ✅ Download and view documents
+- ❌ Cannot upload to shared folders
 - ❌ Cannot access admin functions
 
 ### **Access Levels**
@@ -135,6 +138,22 @@ src/
 - Responsive mobile design
 - Intuitive navigation
 - Error handling with user feedback
+
+### **💬 Document Comments & Collaboration**
+- Real-time document commenting system
+- Threaded comment replies for structured discussions
+- Comment editing and deletion with permissions
+- Author attribution and timestamps
+- Comment history with edit indicators
+- Role-based comment management (admin can moderate all comments)
+
+### **📋 Document Cloning System**
+- Clone documents from shared folders to personal folders
+- Interactive clone modal with folder selection
+- Create new personal folders during cloning process
+- Maintains original file while creating independent copy
+- Proper permission validation for cloning operations
+- Organized folder selection by category
 
 ## 💾 **Database Features**
 
@@ -273,8 +292,7 @@ npm run dev
 - Integration capabilities
 
 ## 🔮 **Future Enhancement Possibilities**
-- Real-time collaboration
-- Document commenting system
+- Real-time collaboration notifications
 - Advanced search with full-text
 - Workflow automation
 - API for third-party integrations
@@ -283,6 +301,9 @@ npm run dev
 - Document templates
 - Bulk operations
 - Export/import functionality
+- Email notifications for comments
+- @mentions in comments
+- Comment attachments
 
 ## 🏆 **Key Strengths**
 
@@ -296,12 +317,14 @@ npm run dev
 8. **☁️ Cloud Native**: Scalable architecture
 
 ## 📈 **Project Metrics**
-- **50+ Components**: Reusable UI components
-- **20+ API Endpoints**: Full CRUD operations
+- **60+ Components**: Reusable UI components
+- **30+ API Endpoints**: Full CRUD operations including comments and cloning
 - **5 User Roles**: Granular permission system
 - **10+ File Types**: Comprehensive format support
 - **100% Type Safe**: End-to-end TypeScript
 - **Mobile Responsive**: All screen sizes supported
+- **Full Comment System**: Threaded discussions with permissions
+- **Document Cloning**: Complete clone workflow with folder management
 
 ---
 

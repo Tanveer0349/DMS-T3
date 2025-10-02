@@ -8,6 +8,7 @@ import {
   categories,
   documents,
   documentVersions,
+  documentComments,
   folders,
   users,
 } from "~/server/db/schema";
@@ -239,14 +240,12 @@ export const userRouter = createTRPCRouter({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      // If it's a personal folder, make sure user owns it
-      if (folder[0]!.isPersonal && folder[0]!.createdBy !== ctx.session.user.id) {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
-
-      // For shared folders, check if user has full access
-      if (!folder[0]!.isPersonal && hasAccess[0]?.accessLevel !== "full") {
-        throw new TRPCError({ code: "FORBIDDEN" });
+      // Users can only upload to their own personal folders
+      if (!folder[0]!.isPersonal || folder[0]!.createdBy !== ctx.session.user.id) {
+        throw new TRPCError({ 
+          code: "FORBIDDEN", 
+          message: "You can only upload documents to your personal folders. Use clone feature for shared documents." 
+        });
       }
 
       const documentId = generateId();
@@ -315,12 +314,10 @@ export const userRouter = createTRPCRouter({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      // Users can upload versions if:
-      // 1. They own the document, OR
-      // 2. It's in a shared folder and they have full access
-      const canUpload =
-        doc.document.createdBy === ctx.session.user.id ||
-        (!doc.folder.isPersonal && hasAccess[0]?.accessLevel === "full");
+      // Users can only upload versions to documents they own in personal folders
+      const canUpload = 
+        doc.document.createdBy === ctx.session.user.id && 
+        doc.folder.isPersonal;
 
       if (!canUpload) {
         throw new TRPCError({ code: "FORBIDDEN" });
@@ -397,12 +394,10 @@ export const userRouter = createTRPCRouter({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      // Users can delete documents if:
-      // 1. They own the document, OR
-      // 2. It's in a shared folder and they have full access
-      const canDelete =
-        doc.document.createdBy === ctx.session.user.id ||
-        (!doc.folder.isPersonal && hasAccess[0]?.accessLevel === "full");
+      // Users can only delete documents they own in personal folders
+      const canDelete = 
+        doc.document.createdBy === ctx.session.user.id && 
+        doc.folder.isPersonal;
 
       if (!canDelete) {
         throw new TRPCError({ code: "FORBIDDEN" });
@@ -447,12 +442,10 @@ export const userRouter = createTRPCRouter({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      // Users can delete versions if:
-      // 1. They own the document, OR
-      // 2. It's in a shared folder and they have full access
-      const canDelete =
-        doc.document.createdBy === ctx.session.user.id ||
-        (!doc.folder.isPersonal && hasAccess[0]?.accessLevel === "full");
+      // Users can only delete versions of documents they own in personal folders
+      const canDelete = 
+        doc.document.createdBy === ctx.session.user.id && 
+        doc.folder.isPersonal;
 
       if (!canDelete) {
         throw new TRPCError({ code: "FORBIDDEN" });
@@ -561,4 +554,350 @@ export const userRouter = createTRPCRouter({
         .where(eq(documentVersions.documentId, input.documentId))
         .orderBy(documentVersions.versionNumber);
     }),
+
+  // Document Comments
+  getDocumentComments: protectedProcedure
+    .input(z.object({ documentId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      // First check if user has access to this document
+      const documentData = await ctx.db
+        .select({
+          document: documents,
+          folder: folders,
+        })
+        .from(documents)
+        .innerJoin(folders, eq(folders.id, documents.folderId))
+        .where(eq(documents.id, input.documentId))
+        .limit(1);
+
+      if (documentData.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const doc = documentData[0]!;
+
+      // Check category access
+      const hasAccess = await ctx.db
+        .select()
+        .from(accessControl)
+        .where(
+          and(
+            eq(accessControl.userId, ctx.session.user.id),
+            eq(accessControl.categoryId, doc.folder.categoryId)
+          )
+        );
+
+      if (hasAccess.length === 0) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      // If it's a personal folder, make sure user owns it
+      if (doc.folder.isPersonal && doc.folder.createdBy !== ctx.session.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      return ctx.db
+        .select({
+          id: documentComments.id,
+          documentId: documentComments.documentId,
+          parentCommentId: documentComments.parentCommentId,
+          content: documentComments.content,
+          authorId: documentComments.authorId,
+          authorName: users.name,
+          authorEmail: users.email,
+          isEdited: documentComments.isEdited,
+          createdAt: documentComments.createdAt,
+          updatedAt: documentComments.updatedAt,
+        })
+        .from(documentComments)
+        .innerJoin(users, eq(users.id, documentComments.authorId))
+        .where(eq(documentComments.documentId, input.documentId))
+        .orderBy(documentComments.createdAt);
+    }),
+
+  createComment: protectedProcedure
+    .input(
+      z.object({
+        documentId: z.string(),
+        content: z.string().min(1),
+        parentCommentId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check document access
+      const documentData = await ctx.db
+        .select({
+          document: documents,
+          folder: folders,
+        })
+        .from(documents)
+        .innerJoin(folders, eq(folders.id, documents.folderId))
+        .where(eq(documents.id, input.documentId))
+        .limit(1);
+
+      if (documentData.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const doc = documentData[0]!;
+
+      // Check category access
+      const hasAccess = await ctx.db
+        .select()
+        .from(accessControl)
+        .where(
+          and(
+            eq(accessControl.userId, ctx.session.user.id),
+            eq(accessControl.categoryId, doc.folder.categoryId)
+          )
+        );
+
+      if (hasAccess.length === 0) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      // If it's a personal folder, make sure user owns it
+      if (doc.folder.isPersonal && doc.folder.createdBy !== ctx.session.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const commentId = generateId();
+      
+      await ctx.db.insert(documentComments).values({
+        id: commentId,
+        documentId: input.documentId,
+        parentCommentId: input.parentCommentId || null,
+        content: input.content,
+        authorId: ctx.session.user.id,
+      });
+
+      return { id: commentId, content: input.content };
+    }),
+
+  updateComment: protectedProcedure
+    .input(
+      z.object({
+        commentId: z.string(),
+        content: z.string().min(1),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if user owns the comment
+      const comment = await ctx.db
+        .select()
+        .from(documentComments)
+        .where(
+          and(
+            eq(documentComments.id, input.commentId),
+            eq(documentComments.authorId, ctx.session.user.id)
+          )
+        )
+        .limit(1);
+
+      if (comment.length === 0) {
+        throw new TRPCError({ 
+          code: "FORBIDDEN", 
+          message: "You can only edit your own comments" 
+        });
+      }
+
+      await ctx.db
+        .update(documentComments)
+        .set({ 
+          content: input.content,
+          isEdited: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(documentComments.id, input.commentId));
+
+      return { success: true };
+    }),
+
+  deleteComment: protectedProcedure
+    .input(z.object({ commentId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Check if user owns the comment
+      const comment = await ctx.db
+        .select()
+        .from(documentComments)
+        .where(
+          and(
+            eq(documentComments.id, input.commentId),
+            eq(documentComments.authorId, ctx.session.user.id)
+          )
+        )
+        .limit(1);
+
+      if (comment.length === 0) {
+        throw new TRPCError({ 
+          code: "FORBIDDEN", 
+          message: "You can only delete your own comments" 
+        });
+      }
+
+      await ctx.db
+        .delete(documentComments)
+        .where(eq(documentComments.id, input.commentId));
+      
+      return { success: true };
+    }),
+
+  // Clone Document
+  cloneDocument: protectedProcedure
+    .input(
+      z.object({
+        documentId: z.string(),
+        targetFolderId: z.string(),
+        newName: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // First, verify user has access to the source document
+      const sourceDocumentData = await ctx.db
+        .select({
+          document: documents,
+          folder: folders,
+        })
+        .from(documents)
+        .innerJoin(folders, eq(folders.id, documents.folderId))
+        .where(eq(documents.id, input.documentId))
+        .limit(1);
+
+      if (sourceDocumentData.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Source document not found" });
+      }
+
+      const sourceDoc = sourceDocumentData[0]!;
+
+      // Check if user has access to the source document's category
+      const hasSourceAccess = await ctx.db
+        .select()
+        .from(accessControl)
+        .where(
+          and(
+            eq(accessControl.userId, ctx.session.user.id),
+            eq(accessControl.categoryId, sourceDoc.folder.categoryId)
+          )
+        );
+
+      if (hasSourceAccess.length === 0) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No access to source document" });
+      }
+
+      // Verify target folder exists and user owns it (must be personal folder)
+      const targetFolder = await ctx.db
+        .select()
+        .from(folders)
+        .where(
+          and(
+            eq(folders.id, input.targetFolderId),
+            eq(folders.createdBy, ctx.session.user.id),
+            eq(folders.isPersonal, true)
+          )
+        )
+        .limit(1);
+
+      if (targetFolder.length === 0) {
+        throw new TRPCError({ 
+          code: "FORBIDDEN", 
+          message: "Target folder must be your personal folder" 
+        });
+      }
+
+      // Check if user has access to target folder's category
+      const hasTargetAccess = await ctx.db
+        .select()
+        .from(accessControl)
+        .where(
+          and(
+            eq(accessControl.userId, ctx.session.user.id),
+            eq(accessControl.categoryId, targetFolder[0]!.categoryId)
+          )
+        );
+
+      if (hasTargetAccess.length === 0) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No access to target category" });
+      }
+
+      // Get the current version of the source document
+      const currentVersion = await ctx.db
+        .select()
+        .from(documentVersions)
+        .where(eq(documentVersions.id, sourceDoc.document.currentVersionId!))
+        .limit(1);
+
+      if (currentVersion.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Source document version not found" });
+      }
+
+      const clonedDocumentId = generateId();
+      const clonedVersionId = generateId();
+      const documentName = input.newName || `${sourceDoc.document.name} (Copy)`;
+
+      // Create the cloned document
+      await ctx.db.insert(documents).values({
+        id: clonedDocumentId,
+        name: documentName,
+        folderId: input.targetFolderId,
+        createdBy: ctx.session.user.id,
+        cloudinaryUrl: currentVersion[0]!.fileUrl, // Use same file URL
+        currentVersionId: clonedVersionId,
+      });
+
+      // Create the first version for cloned document
+      await ctx.db.insert(documentVersions).values({
+        id: clonedVersionId,
+        documentId: clonedDocumentId,
+        versionNumber: 1,
+        fileUrl: currentVersion[0]!.fileUrl, // Use same file URL
+        uploadedBy: ctx.session.user.id,
+      });
+
+      return { 
+        id: clonedDocumentId, 
+        name: documentName,
+        message: "Document cloned successfully" 
+      };
+    }),
+
+  // Get user's personal folders for cloning
+  getPersonalFoldersForCloning: protectedProcedure.query(async ({ ctx }) => {
+    // Get all categories user has access to
+    const userAccess = await ctx.db
+      .select({
+        categoryId: accessControl.categoryId,
+        categoryName: categories.name,
+      })
+      .from(accessControl)
+      .innerJoin(categories, eq(categories.id, accessControl.categoryId))
+      .where(eq(accessControl.userId, ctx.session.user.id));
+
+    if (userAccess.length === 0) {
+      return [];
+    }
+
+    const categoryIds = userAccess.map(access => access.categoryId);
+
+    // Get user's personal folders in accessible categories
+    const personalFolders = await ctx.db
+      .select({
+        id: folders.id,
+        name: folders.name,
+        categoryId: folders.categoryId,
+        categoryName: categories.name,
+        createdAt: folders.createdAt,
+      })
+      .from(folders)
+      .innerJoin(categories, eq(categories.id, folders.categoryId))
+      .where(
+        and(
+          eq(folders.createdBy, ctx.session.user.id),
+          eq(folders.isPersonal, true),
+          inArray(folders.categoryId, categoryIds)
+        )
+      )
+      .orderBy(categories.name, folders.name);
+
+    return personalFolders;
+  }),
 });

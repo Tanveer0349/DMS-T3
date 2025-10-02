@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { History, Upload, Eye, Download, FileText, Clock, User, Trash2, AlertTriangle } from "lucide-react";
+import { History, Upload, Eye, Download, FileText, Clock, User, Trash2, AlertTriangle, Copy } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { FileUploader } from "~/components/FileUploader";
+import { DocumentComments } from "~/components/DocumentComments";
+import { CloneDocumentModal } from "~/components/CloneDocumentModal";
 import { useToast } from "~/components/providers/toast-provider";
 import { formatDate } from "~/lib/utils";
 import { api } from "~/trpc/react";
@@ -16,7 +18,10 @@ interface DocumentVersionManagerProps {
   canUploadVersions: boolean;
   canDelete: boolean;
   isAdmin?: boolean;
+  isOwnDocument?: boolean;
+  isPersonalFolder?: boolean;
   onDocumentDelete?: () => void;
+  onDocumentClone?: () => void;
 }
 
 export function DocumentVersionManager({ 
@@ -25,13 +30,17 @@ export function DocumentVersionManager({
   canUploadVersions,
   canDelete,
   isAdmin = false,
-  onDocumentDelete
+  isOwnDocument = false,
+  isPersonalFolder = false,
+  onDocumentDelete,
+  onDocumentClone
 }: DocumentVersionManagerProps) {
   const [showVersions, setShowVersions] = useState(false);
   const [isUploadingVersion, setIsUploadingVersion] = useState(false);
   const [deletingVersionId, setDeletingVersionId] = useState<string | null>(null);
   const [confirmDeleteDocument, setConfirmDeleteDocument] = useState(false);
   const [confirmDeleteVersion, setConfirmDeleteVersion] = useState<string | null>(null);
+  const [showCloneModal, setShowCloneModal] = useState(false);
   const { addToast } = useToast();
 
   // Queries
@@ -138,20 +147,16 @@ export function DocumentVersionManager({
         description: `Downloading version ${versionNumber} of "${documentName}"...`,
       });
 
-      // Create a temporary link and trigger download
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
+      // Use our download API route for proper handling
+      const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(`${fileName}_v${versionNumber}`)}`;
       
+      // Create a temporary link and trigger download
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `${fileName}_v${versionNumber}.${url.split('.').pop() || 'file'}`;
+      link.download = `${fileName}_v${versionNumber}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Cleanup
-      window.URL.revokeObjectURL(downloadUrl);
       
       addToast({
         type: "success",
@@ -167,6 +172,33 @@ export function DocumentVersionManager({
       });
     }
   };
+
+  const handleView = async (url: string, fileName: string, versionNumber: number) => {
+    try {
+      // For PDFs and other viewable files, use our download API to get the file
+      const viewUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(`${fileName}_v${versionNumber}`)}&inline=true`;
+      window.open(viewUrl, '_blank');
+    } catch (error) {
+      console.error("View failed:", error);
+      addToast({
+        type: "error",
+        title: "View failed",
+        description: "Failed to view the document. Please try again.",
+      });
+    }
+  };
+
+  const handleCloneSuccess = () => {
+    onDocumentClone?.();
+    addToast({
+      type: "success",
+      title: "Document cloned",
+      description: `"${documentName}" has been cloned to your personal folder.`,
+    });
+  };
+
+  // Determine if user can clone this document (not their own document or not in personal folder)
+  const canClone = !isAdmin && (!isOwnDocument || !isPersonalFolder);
 
   return (
     <div className="space-y-4">
@@ -186,6 +218,17 @@ export function DocumentVersionManager({
             <History className="h-4 w-4 mr-2" />
             {showVersions ? "Hide" : "Show"} Versions ({versions?.length || 0})
           </Button>
+          {canClone && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCloneModal(true)}
+              className="w-full sm:w-auto"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Clone Document
+            </Button>
+          )}
           {canDelete && !confirmDeleteDocument && (
             <Button
               variant="outline"
@@ -291,7 +334,7 @@ export function DocumentVersionManager({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => window.open(version.fileUrl, '_blank')}
+                                onClick={() => handleView(version.fileUrl, documentName, version.versionNumber)}
                                 className="flex-1 sm:flex-none"
                               >
                                 <Eye className="h-4 w-4 mr-1" />
@@ -398,6 +441,23 @@ export function DocumentVersionManager({
           </Card>
         </div>
       )}
+
+      {/* Document Comments */}
+      <DocumentComments 
+        documentId={documentId}
+        documentName={documentName}
+        isAdmin={isAdmin}
+        canComment={true}
+      />
+
+      {/* Clone Document Modal */}
+      <CloneDocumentModal
+        isOpen={showCloneModal}
+        onClose={() => setShowCloneModal(false)}
+        documentId={documentId}
+        documentName={documentName}
+        onCloneSuccess={handleCloneSuccess}
+      />
     </div>
   );
 }

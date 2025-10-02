@@ -265,6 +265,8 @@ export function CategoryDetailClient({ categoryId }: CategoryDetailClientProps) 
                             canUploadVersions={true}
                             canDelete={true}
                             isAdmin={true}
+                            isOwnDocument={true}
+                            isPersonalFolder={false}
                             onDocumentDelete={async () => {
                               await refetchDocuments();
                             }}

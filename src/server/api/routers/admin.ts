@@ -8,6 +8,7 @@ import {
   categories,
   documents,
   documentVersions,
+  documentComments,
   folders,
   users,
 } from "~/server/db/schema";
@@ -415,5 +416,93 @@ export const adminRouter = createTRPCRouter({
         })
         .from(accessControl)
         .where(eq(accessControl.categoryId, input.categoryId));
+    }),
+
+  // Document Comments
+  getDocumentComments: adminProcedure
+    .input(z.object({ documentId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db
+        .select({
+          id: documentComments.id,
+          documentId: documentComments.documentId,
+          parentCommentId: documentComments.parentCommentId,
+          content: documentComments.content,
+          authorId: documentComments.authorId,
+          authorName: users.name,
+          authorEmail: users.email,
+          isEdited: documentComments.isEdited,
+          createdAt: documentComments.createdAt,
+          updatedAt: documentComments.updatedAt,
+        })
+        .from(documentComments)
+        .innerJoin(users, eq(users.id, documentComments.authorId))
+        .where(eq(documentComments.documentId, input.documentId))
+        .orderBy(documentComments.createdAt);
+    }),
+
+  createComment: adminProcedure
+    .input(
+      z.object({
+        documentId: z.string(),
+        content: z.string().min(1),
+        parentCommentId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const commentId = generateId();
+      
+      await ctx.db.insert(documentComments).values({
+        id: commentId,
+        documentId: input.documentId,
+        parentCommentId: input.parentCommentId || null,
+        content: input.content,
+        authorId: ctx.session.user.id,
+      });
+
+      return { id: commentId, content: input.content };
+    }),
+
+  updateComment: adminProcedure
+    .input(
+      z.object({
+        commentId: z.string(),
+        content: z.string().min(1),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if user owns the comment
+      const comment = await ctx.db
+        .select()
+        .from(documentComments)
+        .where(eq(documentComments.id, input.commentId))
+        .limit(1);
+
+      if (comment.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Comment not found" });
+      }
+
+      // Admin can edit any comment
+      await ctx.db
+        .update(documentComments)
+        .set({ 
+          content: input.content,
+          isEdited: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(documentComments.id, input.commentId));
+
+      return { success: true };
+    }),
+
+  deleteComment: adminProcedure
+    .input(z.object({ commentId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Admin can delete any comment
+      await ctx.db
+        .delete(documentComments)
+        .where(eq(documentComments.id, input.commentId));
+      
+      return { success: true };
     }),
 });
