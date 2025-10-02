@@ -211,6 +211,7 @@ export const userRouter = createTRPCRouter({
         name: z.string().min(1),
         folderId: z.string(),
         cloudinaryUrl: z.string(),
+        cloudinaryPublicId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -258,6 +259,7 @@ export const userRouter = createTRPCRouter({
         folderId: input.folderId,
         createdBy: ctx.session.user.id,
         cloudinaryUrl: input.cloudinaryUrl,
+        cloudinaryPublicId: input.cloudinaryPublicId,
         currentVersionId: versionId,
       });
 
@@ -267,6 +269,7 @@ export const userRouter = createTRPCRouter({
         documentId,
         versionNumber: 1,
         fileUrl: input.cloudinaryUrl,
+        cloudinaryPublicId: input.cloudinaryPublicId,
         uploadedBy: ctx.session.user.id,
       });
 
@@ -279,6 +282,7 @@ export const userRouter = createTRPCRouter({
       z.object({
         documentId: z.string(),
         fileUrl: z.string(),
+        cloudinaryPublicId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -343,6 +347,7 @@ export const userRouter = createTRPCRouter({
         documentId: input.documentId,
         versionNumber: newVersionNumber,
         fileUrl: input.fileUrl,
+        cloudinaryPublicId: input.cloudinaryPublicId,
         uploadedBy: ctx.session.user.id,
       });
 
@@ -351,7 +356,8 @@ export const userRouter = createTRPCRouter({
         .update(documents)
         .set({ 
           currentVersionId: versionId,
-          cloudinaryUrl: input.fileUrl 
+          cloudinaryUrl: input.fileUrl,
+          cloudinaryPublicId: input.cloudinaryPublicId,
         })
         .where(eq(documents.id, input.documentId));
 

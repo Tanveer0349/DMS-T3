@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const fileUrl = searchParams.get("url");
     const fileName = searchParams.get("filename");
+    const inline = searchParams.get("inline") === "true";
 
     if (!fileUrl) {
       return NextResponse.json({ error: "File URL is required" }, { status: 400 });
@@ -26,13 +27,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid file URL" }, { status: 400 });
     }
 
-    console.log(`[Download] User: ${session.user.email}, File: ${fileName}`);
+    console.log(`[Download] User: ${session.user.email}, File: ${fileName}, URL: ${fileUrl}, Inline: ${inline}`);
 
     // Fetch the file from Cloudinary
     const response = await fetch(fileUrl, {
       method: 'GET',
       headers: {
         'Accept': '*/*',
+        'User-Agent': 'DMS-Download-Service/1.0',
       },
     });
 
@@ -47,6 +49,28 @@ export async function GET(request: NextRequest) {
     const contentType = response.headers.get('content-type') || 'application/octet-stream';
     const buffer = await response.arrayBuffer();
 
+    // Determine content disposition based on file type and inline parameter
+    let contentDisposition: string;
+    if (inline && contentType === 'application/pdf') {
+      contentDisposition = fileName 
+        ? `inline; filename="${encodeURIComponent(fileName)}.pdf"` 
+        : 'inline';
+    } else {
+      // Determine file extension from content type or filename
+      let fileExtension = '';
+      if (contentType.includes('pdf')) fileExtension = '.pdf';
+      else if (contentType.includes('word') || contentType.includes('document')) fileExtension = '.docx';
+      else if (contentType.includes('text')) fileExtension = '.txt';
+      else if (contentType.includes('spreadsheet') || contentType.includes('excel')) fileExtension = '.xlsx';
+      else if (fileName && fileName.includes('.')) {
+        fileExtension = '.' + fileName.split('.').pop();
+      }
+
+      contentDisposition = fileName 
+        ? `attachment; filename="${encodeURIComponent(fileName)}${fileExtension}"` 
+        : 'attachment';
+    }
+
     // Check if file is empty
     if (buffer.byteLength === 0) {
       console.error('[Download] File is empty');
@@ -56,7 +80,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`[Download] Success: ${fileName}, Size: ${buffer.byteLength} bytes`);
+    console.log(`[Download] Success: ${fileName}, Size: ${buffer.byteLength} bytes, ContentType: ${contentType}, Inline: ${inline}`);
 
     // Return the file with proper headers
     return new NextResponse(buffer, {
@@ -64,10 +88,12 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': contentType,
         'Content-Length': buffer.byteLength.toString(),
-        'Content-Disposition': fileName 
-          ? `attachment; filename="${encodeURIComponent(fileName)}"` 
-          : 'attachment',
+        'Content-Disposition': contentDisposition,
         'Cache-Control': 'no-cache',
+        // Add CORS headers for better browser compatibility
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   } catch (error) {

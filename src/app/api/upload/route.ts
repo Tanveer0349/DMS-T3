@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
       size: file.size,
       type: file.type,
       uploadedAt: new Date().toISOString(),
+      cloudinaryPublicId: result.public_id,
     });
   } catch (error) {
     console.error("Upload error:", error);

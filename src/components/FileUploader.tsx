@@ -5,7 +5,7 @@ import { Button } from "~/components/ui/button";
 import { cn, formatFileSize } from "~/lib/utils";
 
 interface FileUploaderProps {
-  onUpload: (url: string, fileName: string, originalName: string) => Promise<void>;
+  onUpload: (url: string, fileName: string, originalName: string, publicId?: string) => Promise<void>;
   accept?: Record<string, string[]>;
   maxSize?: number;
   disabled?: boolean;
@@ -34,7 +34,7 @@ export function FileUploader({
   const [uploadComplete, setUploadComplete] = useState(false);
   const [error, setError] = useState<string>("");
 
-  const uploadFile = async (file: File): Promise<{ url: string; originalName: string }> => {
+  const uploadFile = async (file: File): Promise<{ url: string; originalName: string; publicId: string }> => {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -49,7 +49,11 @@ export function FileUploader({
     }
 
     const data = await response.json();
-    return { url: data.url, originalName: data.originalName || file.name };
+    return { 
+      url: data.url, 
+      originalName: data.originalName || file.name,
+      publicId: data.cloudinaryPublicId || data.publicId
+    };
   };
 
   const onDrop = useCallback(
@@ -75,12 +79,12 @@ export function FileUploader({
           });
         }, 200);
 
-        const { url, originalName } = await uploadFile(file);
+        const { url, originalName, publicId } = await uploadFile(file);
         
         clearInterval(progressInterval);
         setUploadProgress(90);
 
-        await onUpload(url, file.name, originalName);
+        await onUpload(url, file.name, originalName, publicId);
         
         setUploadProgress(100);
         setUploadComplete(true);

@@ -61,12 +61,13 @@ export function DocumentVersionManager({
     ? api.admin.deleteDocumentVersion.useMutation()
     : api.user.deleteDocumentVersion.useMutation();
 
-  const handleVersionUpload = async (url: string, fileName: string, originalName: string) => {
+  const handleVersionUpload = async (url: string, fileName: string, originalName: string, publicId?: string) => {
     setIsUploadingVersion(true);
     try {
       const result = await createVersionMutation.mutateAsync({
         documentId,
         fileUrl: url,
+        cloudinaryPublicId: publicId,
       });
       await refetchVersions();
       setIsUploadingVersion(false);
@@ -139,7 +140,7 @@ export function DocumentVersionManager({
     }
   };
 
-  const handleDownload = async (url: string, fileName: string, versionNumber: number) => {
+  const handleDownload = async (versionId: string, versionNumber: number) => {
     try {
       addToast({
         type: "info",
@@ -147,13 +148,13 @@ export function DocumentVersionManager({
         description: `Downloading version ${versionNumber} of "${documentName}"...`,
       });
 
-      // Use our download API route for proper handling
-      const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(`${fileName}_v${versionNumber}`)}`;
+      // Use our secure download API route
+      const downloadUrl = `/api/download-secure?versionId=${encodeURIComponent(versionId)}`;
       
       // Create a temporary link and trigger download
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `${fileName}_v${versionNumber}`;
+      link.download = `${documentName}_v${versionNumber}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -173,10 +174,10 @@ export function DocumentVersionManager({
     }
   };
 
-  const handleView = async (url: string, fileName: string, versionNumber: number) => {
+  const handleView = async (versionId: string, versionNumber: number) => {
     try {
-      // For PDFs and other viewable files, use our download API to get the file
-      const viewUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(`${fileName}_v${versionNumber}`)}&inline=true`;
+      // Use our secure download API route with inline parameter for viewing
+      const viewUrl = `/api/download-secure?versionId=${encodeURIComponent(versionId)}&inline=true`;
       window.open(viewUrl, '_blank');
     } catch (error) {
       console.error("View failed:", error);
@@ -334,7 +335,7 @@ export function DocumentVersionManager({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleView(version.fileUrl, documentName, version.versionNumber)}
+                                onClick={() => handleView(version.id, version.versionNumber)}
                                 className="flex-1 sm:flex-none"
                               >
                                 <Eye className="h-4 w-4 mr-1" />
@@ -344,11 +345,7 @@ export function DocumentVersionManager({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleDownload(
-                                  version.fileUrl, 
-                                  documentName, 
-                                  version.versionNumber
-                                )}
+                                onClick={() => handleDownload(version.id, version.versionNumber)}
                                 className="flex-1 sm:flex-none"
                               >
                                 <Download className="h-4 w-4 mr-1" />

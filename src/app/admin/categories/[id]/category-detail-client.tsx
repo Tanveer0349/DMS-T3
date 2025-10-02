@@ -65,7 +65,7 @@ export function CategoryDetailClient({ categoryId }: CategoryDetailClientProps) 
     }
   };
 
-  const handleDocumentUpload = async (url: string, fileName: string, originalName: string) => {
+  const handleDocumentUpload = async (url: string, fileName: string, originalName: string, publicId?: string) => {
     if (!selectedFolder || !newDocumentName.trim()) {
       addToast({
         type: "warning",
@@ -81,6 +81,7 @@ export function CategoryDetailClient({ categoryId }: CategoryDetailClientProps) 
         name: newDocumentName.trim(),
         folderId: selectedFolder,
         cloudinaryUrl: url,
+        cloudinaryPublicId: publicId,
       });
       setNewDocumentName("");
       setIsUploadingDocument(false);

@@ -143,6 +143,7 @@ export const documents = createTable(
       .notNull()
       .references(() => users.id),
     cloudinaryUrl: text("cloudinary_url").notNull(),
+    cloudinaryPublicId: text("cloudinary_public_id"),
     currentVersionId: varchar("current_version_id", { length: 255 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -163,6 +164,7 @@ export const documentVersions = createTable(
       .references(() => documents.id, { onDelete: "cascade" }),
     versionNumber: integer("version_number").notNull(),
     fileUrl: text("file_url").notNull(),
+    cloudinaryPublicId: text("cloudinary_public_id"),
     uploadedBy: varchar("uploaded_by", { length: 255 })
       .notNull()
       .references(() => users.id),
