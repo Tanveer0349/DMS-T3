@@ -190,7 +190,7 @@ export function DocumentComments({
     setReplyContent("");
   };
 
-  const renderComment = (comment: Comment & { replies: Comment[] }, isReply = false) => (
+  const renderComment = (comment: Comment & { replies?: Comment[] }, isReply = false) => (
     <div key={comment.id} className={`${isReply ? "ml-8 mt-4" : ""}`}>
       <div className="border rounded-lg p-4 space-y-3">
         {/* Comment Header */}
@@ -318,7 +318,7 @@ export function DocumentComments({
       </div>
 
       {/* Render Replies */}
-      {comment.replies.length > 0 && (
+      {comment.replies && comment.replies.length > 0 && (
         <div className="space-y-4">
           {comment.replies.map(reply => renderComment(reply, true))}
         </div>

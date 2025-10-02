@@ -3,13 +3,13 @@ import { cookies } from "next/headers";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "~/server/auth";
 
-export async function GET(request: NextRequest) {
+async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD' = 'GET') {
   try {
     // Try to get session using the same method as upload route
     const session = await getServerSession(authOptions);
     
     if (!session || !session.user) {
-      console.error('[Download] No session found');
+      console.error(`[Download-${method}] No session found`);
       return NextResponse.json({ error: "Unauthorized - Please log in" }, { status: 401 });
     }
 
@@ -27,7 +27,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid file URL" }, { status: 400 });
     }
 
-    console.log(`[Download] User: ${session.user.email}, File: ${fileName}, URL: ${fileUrl}, Inline: ${inline}`);
+    console.log(`[Download-${method}] User: ${session.user.email}, File: ${fileName}, URL: ${fileUrl}, Inline: ${inline}`);
+
+    // For HEAD requests, return early with just headers (no body)
+    if (method === 'HEAD') {
+      return new NextResponse(null, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf', // Assume PDF for HEAD request
+          'Cache-Control': 'no-cache',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, HEAD',
+        },
+      });
+    }
 
     // Fetch the file from Cloudinary
     const response = await fetch(fileUrl, {
@@ -49,19 +62,29 @@ export async function GET(request: NextRequest) {
     const contentType = response.headers.get('content-type') || 'application/octet-stream';
     const buffer = await response.arrayBuffer();
 
+    console.log(`[Download] ContentType detected: ${contentType}, Inline: ${inline}, FileName: ${fileName}`);
+
     // Determine content disposition based on file type and inline parameter
     let contentDisposition: string;
-    if (inline && contentType === 'application/pdf') {
+    
+    // Fix content type for PDFs if not properly detected
+    let finalContentType = contentType;
+    if (fileName && fileName.toLowerCase().endsWith('.pdf') && !contentType.includes('pdf')) {
+      finalContentType = 'application/pdf';
+      console.log(`[Download] Corrected content type to application/pdf for ${fileName}`);
+    }
+    
+    if (inline && (finalContentType === 'application/pdf' || finalContentType.includes('pdf'))) {
       contentDisposition = fileName 
-        ? `inline; filename="${encodeURIComponent(fileName)}.pdf"` 
+        ? `inline; filename="${encodeURIComponent(fileName)}"` 
         : 'inline';
     } else {
       // Determine file extension from content type or filename
       let fileExtension = '';
-      if (contentType.includes('pdf')) fileExtension = '.pdf';
-      else if (contentType.includes('word') || contentType.includes('document')) fileExtension = '.docx';
-      else if (contentType.includes('text')) fileExtension = '.txt';
-      else if (contentType.includes('spreadsheet') || contentType.includes('excel')) fileExtension = '.xlsx';
+      if (finalContentType.includes('pdf')) fileExtension = '.pdf';
+      else if (finalContentType.includes('word') || finalContentType.includes('document')) fileExtension = '.docx';
+      else if (finalContentType.includes('text')) fileExtension = '.txt';
+      else if (finalContentType.includes('spreadsheet') || finalContentType.includes('excel')) fileExtension = '.xlsx';
       else if (fileName && fileName.includes('.')) {
         fileExtension = '.' + fileName.split('.').pop();
       }
@@ -86,7 +109,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(buffer, {
       status: 200,
       headers: {
-        'Content-Type': contentType,
+        'Content-Type': finalContentType,
         'Content-Length': buffer.byteLength.toString(),
         'Content-Disposition': contentDisposition,
         'Cache-Control': 'no-cache',
@@ -94,10 +117,13 @@ export async function GET(request: NextRequest) {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST',
         'Access-Control-Allow-Headers': 'Content-Type',
+        // Add additional headers for PDF viewing
+        'X-Content-Type-Options': 'nosniff',
+        'Accept-Ranges': 'bytes',
       },
     });
   } catch (error) {
-    console.error("[Download] Error:", error);
+    console.error(`[Download-${method}] Error:`, error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to download file" },
       { status: 500 }
@@ -105,7 +131,15 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function GET(request: NextRequest) {
+  return handleRequest(request, 'GET');
+}
+
+export async function HEAD(request: NextRequest) {
+  return handleRequest(request, 'HEAD');
+}
+
 // Also support POST method for better compatibility
 export async function POST(request: NextRequest) {
-  return GET(request);
+  return handleRequest(request, 'GET');
 }

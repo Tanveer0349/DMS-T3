@@ -178,13 +178,33 @@ export function DocumentVersionManager({
     try {
       // Use our secure download API route with inline parameter for viewing
       const viewUrl = `/api/download-secure?versionId=${encodeURIComponent(versionId)}&inline=true`;
-      window.open(viewUrl, '_blank');
+      
+      // Check if the URL is accessible before opening
+      const testResponse = await fetch(viewUrl, { method: 'HEAD' });
+      if (!testResponse.ok) {
+        console.error(`View failed: ${testResponse.status} ${testResponse.statusText}`);
+        addToast({
+          type: "error",
+          title: "View failed",
+          description: `Failed to access document: ${testResponse.statusText}. Please check if the file exists and you have permission to view it.`,
+        });
+        return;
+      }
+      
+      const newWindow = window.open(viewUrl, '_blank');
+      if (!newWindow) {
+        addToast({
+          type: "error",
+          title: "Popup blocked",
+          description: "Please allow popups for this site to view documents.",
+        });
+      }
     } catch (error) {
       console.error("View failed:", error);
       addToast({
         type: "error",
         title: "View failed",
-        description: "Failed to view the document. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to view the document. Please try again.",
       });
     }
   };

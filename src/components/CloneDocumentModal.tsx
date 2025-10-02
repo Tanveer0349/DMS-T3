@@ -54,7 +54,7 @@ export function CloneDocumentModal({
     if (!acc[folder.categoryName]) {
       acc[folder.categoryName] = [];
     }
-    acc[folder.categoryName].push(folder);
+    acc[folder.categoryName]!.push(folder);
     return acc;
   }, {} as Record<string, PersonalFolder[]>) || {};
 

@@ -17,6 +17,10 @@ export const metadata = {
   title: "Document Management System",
   description: "A modern document management system built with T3 stack",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
+  other: {
+    // Optimize resource loading
+    "theme-color": "#ffffff",
+  },
 };
 
 export default async function RootLayout({
